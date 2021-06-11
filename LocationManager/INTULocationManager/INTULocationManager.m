@@ -575,14 +575,24 @@ static id _sharedInstance;
 {
     [self requestAuthorizationIfNeeded];
     
-    NSArray *locationRequests = [self activeLocationRequestsExcludingType:INTULocationRequestTypeSignificantChanges];
-    if (locationRequests.count == 0) {
-        [self.locationManager startUpdatingLocation];
-        if (self.isUpdatingLocation == NO) {
-            INTULMLog(@"Location services updates have started.");
-        }
-        self.isUpdatingLocation = YES;
+    if (self.locationManager.authorizationStatus == kCLAuthorizationStatusNotDetermined) {
+        return;
     }
+    
+    NSArray *locationRequests = [self activeLocationRequestsExcludingType:INTULocationRequestTypeSignificantChanges];
+    
+    if (!self.isUpdatingLocation) {
+        [self startUpdatingLocation];
+    }
+}
+
+- (void)startUpdatingLocation
+{
+    [self.locationManager startUpdatingLocation];
+    if (self.isUpdatingLocation == NO) {
+        INTULMLog(@"Location services updates have started.");
+    }
+    self.isUpdatingLocation = YES;
 }
 
 - (void)stopMonitoringSignificantLocationChangesIfPossible
@@ -1014,6 +1024,8 @@ BOOL INTUCLHeadingIsIsValid(CLHeading *heading)
     else if (status == kCLAuthorizationStatusAuthorized) {
 #endif /* __IPHONE_OS_VERSION_MAX_ALLOWED > __IPHONE_7_1 */
 
+        [self startUpdatingLocation];
+        
         // Start the timeout timer for location requests that were waiting for authorization
         for (INTULocationRequest *locationRequest in self.locationRequests) {
             [locationRequest startTimeoutTimerIfNeeded];
