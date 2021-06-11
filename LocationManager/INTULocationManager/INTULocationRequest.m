@@ -157,9 +157,13 @@
 /**
  Starts the location request's timeout timer if a nonzero timeout value is set, and the timer has not already been started.
  */
+- (BOOL)shouldStartTimer {
+    return self.timeout > 0 && !self.timeoutTimer;
+}
+
 - (void)startTimeoutTimerIfNeeded
 {
-    if (self.timeout > 0 && !self.timeoutTimer) {
+    if ([self shouldStartTimer]) {
         self.requestStartTime = [NSDate date];
         self.timeoutTimer = [NSTimer scheduledTimerWithTimeInterval:self.timeout target:self selector:@selector(timeoutTimerFired:) userInfo:nil repeats:NO];
     }

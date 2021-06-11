@@ -1022,10 +1022,16 @@ BOOL INTUCLHeadingIsIsValid(CLHeading *heading)
     else if (status == kCLAuthorizationStatusAuthorized) {
 #endif /* __IPHONE_OS_VERSION_MAX_ALLOWED > __IPHONE_7_1 */
 
-        [self startUpdatingLocation];
+        NSArray *requestsThatWillStartTimer = [self.locationRequests filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(INTULocationRequest *request, NSDictionary *bindings) {
+            return [request shouldStartTimer];
+        }]];
+        
+        if (requestsThatWillStartTimer.count) {
+            [self startUpdatingLocation];
+        }
         
         // Start the timeout timer for location requests that were waiting for authorization
-        for (INTULocationRequest *locationRequest in self.locationRequests) {
+        for (INTULocationRequest *locationRequest in requestsThatWillStartTimer) {
             [locationRequest startTimeoutTimerIfNeeded];
         }
     }
