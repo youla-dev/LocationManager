@@ -575,12 +575,10 @@ static id _sharedInstance;
 {
     [self requestAuthorizationIfNeeded];
     
-    if (self.locationManager.authorizationStatus == kCLAuthorizationStatusNotDetermined) {
+    if ([CLLocationManager authorizationStatus] == kCLAuthorizationStatusNotDetermined) {
         return;
     }
-    
-    NSArray *locationRequests = [self activeLocationRequestsExcludingType:INTULocationRequestTypeSignificantChanges];
-    
+
     if (!self.isUpdatingLocation) {
         [self startUpdatingLocation];
     }
