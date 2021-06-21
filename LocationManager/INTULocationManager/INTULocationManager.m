@@ -1029,7 +1029,7 @@ BOOL INTUCLHeadingIsIsValid(CLHeading *heading)
         
         if (@available(iOS 14, *)) {
             locationRequests = [locationRequests filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(INTULocationRequest *request, NSDictionary *bindings) {
-                // Проверка на shouldStartTimer нужна, чтобы вызвался stopUpdatingLocation, иначе можем начать трекать локацию и не остановиться.
+                // Проверка на shouldStartTimer нужна, чтобы вызвался stopUpdatingLocation по истечению таймера, иначе можем начать трекать локацию и не остановиться.
                 return [request shouldStartTimer];
             }]];
             
