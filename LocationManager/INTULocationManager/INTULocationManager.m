@@ -575,12 +575,15 @@ static id _sharedInstance;
 {
     [self requestAuthorizationIfNeeded];
     
-    if ([CLLocationManager authorizationStatus] == kCLAuthorizationStatusNotDetermined) {
-        return;
-    }
-
-    if (!self.isUpdatingLocation) {
-        [self startUpdatingLocation];
+    if (@available(iOS 14, *)) {
+        if (!self.isUpdatingLocation && [CLLocationManager authorizationStatus] != kCLAuthorizationStatusNotDetermined) {
+            [self startUpdatingLocation];
+        }
+    } else {
+        NSArray *locationRequests = [self activeLocationRequestsExcludingType:INTULocationRequestTypeSignificantChanges];
+        if (locationRequests.count == 0) {
+            [self startUpdatingLocation];
+        }
     }
 }
 
@@ -1022,16 +1025,21 @@ BOOL INTUCLHeadingIsIsValid(CLHeading *heading)
     else if (status == kCLAuthorizationStatusAuthorized) {
 #endif /* __IPHONE_OS_VERSION_MAX_ALLOWED > __IPHONE_7_1 */
 
-        NSArray *requestsThatWillStartTimer = [self.locationRequests filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(INTULocationRequest *request, NSDictionary *bindings) {
-            return [request shouldStartTimer];
-        }]];
+        NSArray *locationRequests = self.locationRequests;
         
-        if (requestsThatWillStartTimer.count) {
-            [self startUpdatingLocation];
+        if (@available(iOS 14, *)) {
+            locationRequests = [locationRequests filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(INTULocationRequest *request, NSDictionary *bindings) {
+                // Проверка на shouldStartTimer нужна, чтобы вызвался stopUpdatingLocation, иначе можем начать трекать локацию и не остановиться.
+                return [request shouldStartTimer];
+            }]];
+            
+            if (locationRequests.count) {
+                [self startUpdatingLocation];
+            }
         }
         
         // Start the timeout timer for location requests that were waiting for authorization
-        for (INTULocationRequest *locationRequest in requestsThatWillStartTimer) {
+        for (INTULocationRequest *locationRequest in locationRequests) {
             [locationRequest startTimeoutTimerIfNeeded];
         }
     }
