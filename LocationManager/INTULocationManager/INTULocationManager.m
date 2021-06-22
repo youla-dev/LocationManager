@@ -575,14 +575,25 @@ static id _sharedInstance;
 {
     [self requestAuthorizationIfNeeded];
     
-    NSArray *locationRequests = [self activeLocationRequestsExcludingType:INTULocationRequestTypeSignificantChanges];
-    if (locationRequests.count == 0) {
-        [self.locationManager startUpdatingLocation];
-        if (self.isUpdatingLocation == NO) {
-            INTULMLog(@"Location services updates have started.");
+    if (@available(iOS 14, *)) {
+        if (!self.isUpdatingLocation && [CLLocationManager authorizationStatus] != kCLAuthorizationStatusNotDetermined) {
+            [self startUpdatingLocation];
         }
-        self.isUpdatingLocation = YES;
+    } else {
+        NSArray *locationRequests = [self activeLocationRequestsExcludingType:INTULocationRequestTypeSignificantChanges];
+        if (locationRequests.count == 0) {
+            [self startUpdatingLocation];
+        }
     }
+}
+
+- (void)startUpdatingLocation
+{
+    [self.locationManager startUpdatingLocation];
+    if (self.isUpdatingLocation == NO) {
+        INTULMLog(@"Location services updates have started.");
+    }
+    self.isUpdatingLocation = YES;
 }
 
 - (void)stopMonitoringSignificantLocationChangesIfPossible
@@ -1014,8 +1025,21 @@ BOOL INTUCLHeadingIsIsValid(CLHeading *heading)
     else if (status == kCLAuthorizationStatusAuthorized) {
 #endif /* __IPHONE_OS_VERSION_MAX_ALLOWED > __IPHONE_7_1 */
 
+        NSArray *locationRequests = self.locationRequests;
+        
+        if (@available(iOS 14, *)) {
+            locationRequests = [locationRequests filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(INTULocationRequest *request, NSDictionary *bindings) {
+                // Проверка на shouldStartTimer нужна, чтобы вызвался stopUpdatingLocation по истечению таймера, иначе можем начать трекать локацию и не остановиться.
+                return [request shouldStartTimer];
+            }]];
+            
+            if (locationRequests.count) {
+                [self startUpdatingLocation];
+            }
+        }
+        
         // Start the timeout timer for location requests that were waiting for authorization
-        for (INTULocationRequest *locationRequest in self.locationRequests) {
+        for (INTULocationRequest *locationRequest in locationRequests) {
             [locationRequest startTimeoutTimerIfNeeded];
         }
     }

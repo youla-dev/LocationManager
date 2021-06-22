@@ -98,6 +98,8 @@ typedef NS_ENUM(NSInteger, INTULocationRequestType) {
 /** Returns the associated horizontal accuracy threshold (in meters) for the location request's desired accuracy level. */
 - (CLLocationAccuracy)horizontalAccuracyThreshold;
 
+- (BOOL)shouldStartTimer;
+
 @end
 
 NS_ASSUME_NONNULL_END
